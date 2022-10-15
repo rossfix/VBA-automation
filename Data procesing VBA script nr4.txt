@@ -1,0 +1,459 @@
+'VBA Loop Through .TXT files in a given Folder
+Sub BLX_GN_Create()
+    
+    'Variable Declaration
+    Dim sFilePath As String 'blx meal reports directory
+    Dim sFileName As String 'blx files
+    Dim WScount As Integer 'new sheets - blx reports count
+    Dim A As Integer 'NOML delete
+    Dim I As Integer 'sheets variable
+    Dim LastRow As Integer
+    Dim c As Integer 'CT variable
+    Dim BU As Integer 'bu total meals
+    Dim EC As Integer 'ec total meals
+    Dim D As Integer 'bu and ec loop variable
+    Dim B As Integer 'loop A4 A5
+    Dim GNFileName As String 'gn file name
+    Dim myValue As Variant 'gn file strings
+    Dim LastCell As Integer 'for amount of columns
+    Dim row As Integer 'indicate rows
+    Dim cel As Integer 'indicate columns
+    Dim TextFile As Integer 'indicate gn files
+    Dim FileContent As String 'indicate gn file data
+    Dim GN As Integer 'loop through airport codes
+    Dim fs, f 'indicate gn file properties for killing gn
+    Dim lh As Integer 'check if it is LH
+    Dim flight As String
+    Dim noflight As String
+    
+    With Application.FileDialog(msoFileDialogFolderPicker)
+        If .Show = -1 Then
+            sFilePath = .SelectedItems(1)
+        Else
+            MsgBox "Choose Folder!"
+            Exit Sub
+        End If
+    End With
+    
+    'turn off screen updating
+    Application.ScreenUpdating = False
+    
+    'Check for back slash
+    If Right(sFilePath, 1) <> "\" Then
+        sFilePath = sFilePath & "\"
+    End If
+        
+    sFileName = Dir(sFilePath & "*.txt")
+    'go trought all blx folder txt files
+    Do While Len(sFileName) > 0
+        If sFileName Like "MealReport*" Then
+            If Right(sFileName, 3) = "txt" Then
+            'code to open copy and paste
+            ChDir sFilePath
+            Workbooks.OpenText filename:=sFileName _
+            , Origin:=xlMSDOS, StartRow:=1, DataType:=xlDelimited, TextQualifier:= _
+            xlDoubleQuote, ConsecutiveDelimiter:=True, Tab:=True, Semicolon:=False, _
+            Comma:=False, Space:=True, Other:=False, FieldInfo:=Array(Array(1, 1), _
+            Array(2, 1), Array(3, 1), Array(4, 1), Array(5, 1)), TrailingMinusNumbers:=True
+            Cells.Select
+            Selection.Copy
+            Windows("BLX_GN_Generator.xlsm").Activate
+            Sheets.Add After:=Sheets(Sheets.Count)
+            ActiveSheet.Paste
+            'find noml and delete
+                For A = 1 To Cells(Rows.Count, 1).End(xlUp).row
+                If Range("A" & A).Value = "NOML" Then
+                Rows(A).EntireRow.delete
+                End If
+                Next A
+            Windows(sFileName).Activate
+            Application.CutCopyMode = False
+            ActiveWindow.Close
+            End If
+            'Set the fileName to the next available file
+            sFileName = Dir
+        Else
+            MsgBox "Folder you choose contains unnecessary files! Delete them first."
+            Exit Sub
+        End If
+    Loop
+    
+    'go trought all new sheets
+    WScount = ActiveWorkbook.Worksheets.Count
+    For I = 3 To WScount
+        'copy paste 1st line info
+        ActiveWorkbook.Sheets(I).Activate
+        
+        'make a loop trough flight numbers
+        For B = 4 To 5
+            lh = 1
+            Do Until Sheets(I).Range("A" & lh) = "CLASS"
+                If lh > 500 Then
+                    noflight = noflight & ";" & Sheets(I).Range("A" & B).Value
+                    Exit Do
+                End If
+                If Sheets(I).Range("B" & lh + 1) = "Y" Then
+                    If Range("A" & B) > 0 Then
+                        'line A data
+                        ActiveWorkbook.Sheets(2).Activate
+                        LastRow = Cells(Rows.Count, 1).End(xlUp).row + 1
+                        Range("A" & LastRow).Value = "A"
+                        Range("B" & LastRow).Value = Sheets(I).Range("B" & B).Value
+                        Range("C" & LastRow).Value = " "
+                        Range("D" & LastRow).Value = "BLX"
+                        Range("E" & LastRow).Value = Right(Sheets(I).Range("A" & B), Len(Sheets(I).Range("A" & B)) - 3)
+                        Range("F" & LastRow).Value = Sheets(I).Range("B" & B).Value
+                        Range("F" & LastRow).NumberFormat = "dd.mm.yyyy"
+                        Range("B" & LastRow).NumberFormat = "dd.mm.yyyy"
+                        Range("G" & LastRow).Value = " "
+                        Range("H" & LastRow).Value = "6B"
+                        Range("J" & LastRow).Value = " "
+                        Range("K" & LastRow).Value = "1"
+                        Range("L" & LastRow).Value = Left(Sheets(I).Range("C" & B).Value, 3)
+                        Range("M" & LastRow).Value = Right(Sheets(I).Range("C" & B).Value, 3)
+                        Range("N" & LastRow).Value = " "
+                        Range("O" & LastRow).Value = " "
+                        Range("P" & LastRow).Value = " "
+                        Range("Q" & LastRow).Value = " "
+                        Range("R" & LastRow).Value = " "
+                        Range("S" & LastRow).Value = " "
+                        Range("T" & LastRow).Value = " "
+                        Range("U" & LastRow).Value = " "
+                        Range("V" & LastRow).Value = " "
+                        Range("W" & LastRow).Value = " "
+                        Range("X" & LastRow).Value = " "
+                        Range("Y" & LastRow).Value = " "
+                        Range("AB" & LastRow).Value = " "
+                        Range("G" & LastRow).Value = " "
+                        Range("AC" & LastRow).Value = " "
+                        Range("AE" & LastRow).Value = " "
+                        Range("AF" & LastRow).Value = "^"
+                        ActiveWorkbook.Sheets(I).Activate
+                       
+                        'count meals
+                        'ct - AD cell
+                        c = 1
+                        Do Until Left(Sheets(I).Range("D" & c), 4) = "CHD="
+                        If c > 500 Then
+                            Exit Do
+                        End If
+                        If Left(Sheets(I).Range("D" & c + 1), 4) = "CHD=" Then
+                        Sheets(2).Range("AD" & LastRow).Value = Right(Sheets(I).Range("D" & c + 1).Value, 3)
+                        End If
+                        c = c + 1
+                        Loop
+                        
+                        'delete bu ec
+                        Sheets(I).Range("C" & c).Clear
+                        Sheets(I).Range("D" & c).Clear
+                        
+                        'bu & EC count
+                        D = 1
+                        Do While Sheets(I).Range("B" & D).Value <> "SEAT"
+                        If D > 500 Then
+                            Exit Do
+                        End If
+                        
+                            If Left(Sheets(I).Range("B" & D), 4) = "CHD=" Then
+                                BU = BU + Right(Sheets(I).Range("B" & D), 3)
+                            End If
+                            
+                            If Left(Sheets(I).Range("C" & D), 4) = "CHD=" Then
+                                BU = BU + Right(Sheets(I).Range("C" & D), 3)
+                            End If
+                            
+                            If Left(Sheets(I).Range("B" & D), 4) = "ADT=" Then
+                                EC = EC + Right(Sheets(I).Range("B" & D), 3)
+                            End If
+                            
+                            If Left(Sheets(I).Range("C" & D), 4) = "ADT=" Then
+                                EC = EC + Right(Sheets(I).Range("C" & D), 3)
+                            End If
+                            
+                            D = D + 1
+                        Loop
+                        
+                        'enter bu and ec value
+                        Sheets(2).Range("Z" & LastRow).Value = BU
+                        Sheets(2).Range("AA" & LastRow).Value = EC
+                        BU = 0
+                        EC = 0
+                        
+                        D = 1
+                        Do While Sheets(I).Range("B" & D).Value <> "SEAT"
+                        If D > 500 Then
+                            Exit Do
+                        End If
+                            'bbml
+                            If Left(Sheets(I).Range("E" & D), 4) = "INF=" Then
+                                ActiveWorkbook.Sheets(2).Activate
+                                LastRow = Cells(Rows.Count, 1).End(xlUp).row + 1
+                                Range("A" & LastRow).Value = "T"
+                                Range("B" & LastRow).Value = Range("B" & LastRow - 1).Value
+                                Range("C" & LastRow).Value = Range("C" & LastRow - 1).Value
+                                Range("D" & LastRow).Value = Range("D" & LastRow - 1).Value
+                                Range("E" & LastRow).Value = Range("E" & LastRow - 1).Value
+                                Range("F" & LastRow).Value = Range("F" & LastRow - 1).Value
+                                Range("F" & LastRow).NumberFormat = "dd.mm.yyyy"
+                                Range("B" & LastRow).NumberFormat = "dd.mm.yyyy"
+                                Range("G" & LastRow).Value = Range("G" & LastRow - 1).Value
+                                Range("H" & LastRow).Value = Range("H" & LastRow - 1).Value
+                                Range("J" & LastRow).Value = Range("J" & LastRow - 1).Value
+                                Range("K" & LastRow).Value = Range("K" & LastRow - 1).Value
+                                Range("L" & LastRow).Value = Range("L" & LastRow - 1).Value
+                                Range("M" & LastRow).Value = Range("M" & LastRow - 1).Value
+                                Range("N" & LastRow).Value = "EC"
+                                Range("O" & LastRow).Value = "BBML"
+                                Range("P" & LastRow).Value = " "
+                                Range("Q" & LastRow).Value = " "
+                                Range("R" & LastRow).Value = Right(Sheets(I).Range("E" & D), 3)
+                                Range("R" & LastRow).Value = Range("R" & LastRow).Value & "^"
+                                ActiveWorkbook.Sheets(I).Activate
+                                Range("E" & D).Clear
+                            End If
+                            
+                            D = D + 1
+                        Loop
+                      
+                        'delete normal and chml rows
+                        D = 1
+                        Do While Sheets(I).Range("B" & D).Value <> "SEAT"
+                        If D > 500 Then
+                            Exit Do
+                        End If
+                            If Range("A" & D).Value = "CHML" Then
+                                Rows(D).Clear
+                            End If
+                
+                            If Range("A" & D).Value = "NORMAL" Then
+                                Rows(D).Clear
+                            End If
+                            
+                            D = D + 1
+                        Loop
+                            
+                        'BU spml enter
+                        D = 1
+                        Do While Sheets(I).Range("B" & D).Value <> "SEAT"
+                        If D > 500 Then
+                            Exit Do
+                        End If
+                            If Left(Sheets(I).Range("B" & D), 4) = "CHD=" Then
+                                ActiveWorkbook.Sheets(2).Activate
+                                LastRow = Cells(Rows.Count, 1).End(xlUp).row + 1
+                                Range("A" & LastRow).Value = "T"
+                                Range("B" & LastRow).Value = Range("B" & LastRow - 1).Value
+                                Range("C" & LastRow).Value = Range("C" & LastRow - 1).Value
+                                Range("D" & LastRow).Value = Range("D" & LastRow - 1).Value
+                                Range("E" & LastRow).Value = Range("E" & LastRow - 1).Value
+                                Range("F" & LastRow).Value = Range("F" & LastRow - 1).Value
+                                Range("F" & LastRow).NumberFormat = "dd.mm.yyyy"
+                                Range("B" & LastRow).NumberFormat = "dd.mm.yyyy"
+                                Range("G" & LastRow).Value = Range("G" & LastRow - 1).Value
+                                Range("H" & LastRow).Value = Range("H" & LastRow - 1).Value
+                                Range("J" & LastRow).Value = Range("J" & LastRow - 1).Value
+                                Range("K" & LastRow).Value = Range("K" & LastRow - 1).Value
+                                Range("L" & LastRow).Value = Range("L" & LastRow - 1).Value
+                                Range("M" & LastRow).Value = Range("M" & LastRow - 1).Value
+                                Range("N" & LastRow).Value = "BU"
+                                Range("O" & LastRow).Value = Sheets(I).Range("A" & D).Value
+                                Range("P" & LastRow).Value = " "
+                                Range("Q" & LastRow).Value = " "
+                                Range("R" & LastRow).Value = Right(Sheets(I).Range("B" & D), 3)
+                                Range("R" & LastRow).Value = Range("R" & LastRow).Value & "^"
+                                ActiveWorkbook.Sheets(I).Activate
+                                Range("B" & D).Clear
+                            End If
+                            
+                            If Left(Sheets(I).Range("C" & D), 4) = "CHD=" Then
+                                ActiveWorkbook.Sheets(2).Activate
+                                LastRow = Cells(Rows.Count, 1).End(xlUp).row + 1
+                                Range("A" & LastRow).Value = "T"
+                                Range("B" & LastRow).Value = Range("B" & LastRow - 1).Value
+                                Range("C" & LastRow).Value = Range("C" & LastRow - 1).Value
+                                Range("D" & LastRow).Value = Range("D" & LastRow - 1).Value
+                                Range("E" & LastRow).Value = Range("E" & LastRow - 1).Value
+                                Range("F" & LastRow).Value = Range("F" & LastRow - 1).Value
+                                Range("F" & LastRow).NumberFormat = "dd.mm.yyyy"
+                                Range("B" & LastRow).NumberFormat = "dd.mm.yyyy"
+                                Range("G" & LastRow).Value = Range("G" & LastRow - 1).Value
+                                Range("H" & LastRow).Value = Range("H" & LastRow - 1).Value
+                                Range("J" & LastRow).Value = Range("J" & LastRow - 1).Value
+                                Range("K" & LastRow).Value = Range("K" & LastRow - 1).Value
+                                Range("L" & LastRow).Value = Range("L" & LastRow - 1).Value
+                                Range("M" & LastRow).Value = Range("M" & LastRow - 1).Value
+                                Range("N" & LastRow).Value = "BU"
+                                Range("O" & LastRow).Value = Sheets(I).Range("A" & D).Value
+                                Range("P" & LastRow).Value = " "
+                                Range("Q" & LastRow).Value = " "
+                                Range("R" & LastRow).Value = Right(Sheets(I).Range("B" & D), 3)
+                                Range("R" & LastRow).Value = Range("R" & LastRow).Value & "^"
+                                ActiveWorkbook.Sheets(I).Activate
+                                Range("C" & D).Clear
+                            End If
+                            
+                            'EC spml enter
+                            If Left(Sheets(I).Range("B" & D), 4) = "ADT=" Then
+                                ActiveWorkbook.Sheets(2).Activate
+                                LastRow = Cells(Rows.Count, 1).End(xlUp).row + 1
+                                Range("A" & LastRow).Value = "T"
+                                Range("B" & LastRow).Value = Range("B" & LastRow - 1).Value
+                                Range("C" & LastRow).Value = Range("C" & LastRow - 1).Value
+                                Range("D" & LastRow).Value = Range("D" & LastRow - 1).Value
+                                Range("E" & LastRow).Value = Range("E" & LastRow - 1).Value
+                                Range("F" & LastRow).Value = Range("F" & LastRow - 1).Value
+                                Range("F" & LastRow).NumberFormat = "dd.mm.yyyy"
+                                Range("B" & LastRow).NumberFormat = "dd.mm.yyyy"
+                                Range("G" & LastRow).Value = Range("G" & LastRow - 1).Value
+                                Range("H" & LastRow).Value = Range("H" & LastRow - 1).Value
+                                Range("J" & LastRow).Value = Range("J" & LastRow - 1).Value
+                                Range("K" & LastRow).Value = Range("K" & LastRow - 1).Value
+                                Range("L" & LastRow).Value = Range("L" & LastRow - 1).Value
+                                Range("M" & LastRow).Value = Range("M" & LastRow - 1).Value
+                                Range("N" & LastRow).Value = "EC"
+                                Range("O" & LastRow).Value = Sheets(I).Range("A" & D).Value
+                                Range("P" & LastRow).Value = " "
+                                Range("Q" & LastRow).Value = " "
+                                Range("R" & LastRow).Value = Right(Sheets(I).Range("B" & D), 3)
+                                Range("R" & LastRow).Value = Range("R" & LastRow).Value & "^"
+                                ActiveWorkbook.Sheets(I).Activate
+                                Range("B" & D).Clear
+                            End If
+                            
+                            If Left(Sheets(I).Range("C" & D), 4) = "ADT=" Then
+                                ActiveWorkbook.Sheets(2).Activate
+                                LastRow = Cells(Rows.Count, 1).End(xlUp).row + 1
+                                Range("A" & LastRow).Value = "T"
+                                Range("B" & LastRow).Value = Range("B" & LastRow - 1).Value
+                                Range("C" & LastRow).Value = Range("C" & LastRow - 1).Value
+                                Range("D" & LastRow).Value = Range("D" & LastRow - 1).Value
+                                Range("E" & LastRow).Value = Range("E" & LastRow - 1).Value
+                                Range("F" & LastRow).Value = Range("F" & LastRow - 1).Value
+                                Range("F" & LastRow).NumberFormat = "dd.mm.yyyy"
+                                Range("B" & LastRow).NumberFormat = "dd.mm.yyyy"
+                                Range("G" & LastRow).Value = Range("G" & LastRow - 1).Value
+                                Range("H" & LastRow).Value = Range("H" & LastRow - 1).Value
+                                Range("J" & LastRow).Value = Range("J" & LastRow - 1).Value
+                                Range("K" & LastRow).Value = Range("K" & LastRow - 1).Value
+                                Range("L" & LastRow).Value = Range("L" & LastRow - 1).Value
+                                Range("M" & LastRow).Value = Range("M" & LastRow - 1).Value
+                                Range("N" & LastRow).Value = "EC"
+                                Range("O" & LastRow).Value = Sheets(I).Range("A" & D).Value
+                                Range("P" & LastRow).Value = " "
+                                Range("Q" & LastRow).Value = " "
+                                Range("R" & LastRow).Value = Right(Sheets(I).Range("B" & D), 3)
+                                Range("R" & LastRow).Value = Range("R" & LastRow).Value & "^"
+                                ActiveWorkbook.Sheets(I).Activate
+                                Range("C" & D).Clear
+                            End If
+                            
+                            D = D + 1
+                        Loop
+                        'need to check if deletes SEAT
+                        Rows(D).Clear
+                    End If
+                End If
+                If Sheets(I).Range("B" & lh + 1) = "C" Or Sheets(I).Range("B" & lh + 1) = "F" Then
+                    flight = flight & "; " & Sheets(I).Range("A" & B).Value
+                End If
+                lh = lh + 1
+            Loop
+        Next B
+    Next I
+    'delete all sheets
+    Application.DisplayAlerts = False
+    Do Until ActiveWorkbook.Worksheets.Count = 2
+        Sheets(ActiveWorkbook.Worksheets.Count).delete
+    Loop
+    
+    'create csv file
+    ActiveWorkbook.Sheets(2).Activate
+    
+    For GN = 6 To 8
+        
+        GNFileName = ThisWorkbook.Path & "\GN305" & GN & "PX.txt"
+        
+        Open GNFileName For Output As #1
+        LastRow = Cells(Rows.Count, 1).End(xlUp).row
+        
+        For row = 2 To LastRow
+            LastCell = Cells(row, Columns.Count).End(xlToLeft).Column
+            For cel = 1 To LastCell
+                If GN = 6 Then
+                    If Range("L" & row).Value <> "GOT" Or Range("M" & row).Value = "GOT" _
+                        Or Range("L" & row).Value <> "MMX" Or Range("M" & row).Value = "MMX" Then
+                        If cel = 2 Then
+                        myValue = myValue & Cells(row, cel).Value & " 00:00:00|"
+                        Else
+                        myValue = myValue & Cells(row, cel).Value & "|"
+                        End If
+                    End If
+                End If
+                If GN = 7 Then
+                    If Range("L" & row).Value = "GOT" Or Range("M" & row).Value = "GOT" Then
+                        If cel = 2 Then
+                        myValue = myValue & Cells(row, cel).Value & " 00:00:00|"
+                        Else
+                        myValue = myValue & Cells(row, cel).Value & "|"
+                        End If
+                    End If
+                End If
+                If GN = 8 Then
+                    If Range("L" & row).Value = "MMX" Or Range("M" & row).Value = "MMX" Then
+                        If cel = 2 Then
+                        myValue = myValue & Cells(row, cel).Value & " 00:00:00|"
+                        Else
+                        myValue = myValue & Cells(row, cel).Value & "|"
+                        End If
+                    End If
+                End If
+            Next cel
+            If myValue <> "" Then
+                    myValue = Left(myValue, Len(myValue) - 1)
+                    Print #1, myValue
+            End If
+            myValue = ""
+        Next row
+        Close #1
+        
+        'if emty file delete, else replace
+        Set fs = CreateObject("Scripting.FileSystemObject")
+        Set f = fs.getfile(GNFileName)
+        
+        If f.Size > 0 Then
+            TextFile = FreeFile
+            Open GNFileName For Input As TextFile
+            FileContent = Input(LOF(TextFile), TextFile)
+            Close TextFile
+
+            FileContent = Replace(FileContent, "/", ".")
+
+            TextFile = FreeFile
+            Open GNFileName For Output As TextFile
+            Print #TextFile, FileContent
+            Close TextFile
+        Else
+            Kill GNFileName
+        End If
+    Next GN
+    
+    If flight <> "" Then
+        MsgBox "Please do LH manually" & flight
+    End If
+    
+    If noflight <> "" Then
+        MsgBox "There were empty Flights, Please check" & noflight
+    End If
+    
+    ActiveWorkbook.Sheets(1).Activate
+    Application.DisplayAlerts = True
+    Application.ScreenUpdating = True
+   
+End Sub
+
+Sub Clear_content()
+
+Sheets(2).Range("A:H").Clear
+Sheets(2).Range("J:AF").Clear
+
+End Sub

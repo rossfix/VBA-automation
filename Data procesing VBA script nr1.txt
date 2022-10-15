@@ -1,0 +1,110 @@
+Sub Create_XML()
+    Dim I As Integer 'loop for city jet sheet
+    Dim FileName As Variant 'city jet file name
+    Dim LastRow As Integer 'last table rows
+    Dim F As Integer 'loop inside each flight in city jet
+    Dim LastString As Integer 'last city jet order row
+    Dim CC As Integer 'Enters crew into xml
+    Dim FileCheckARN As String 'checks if xml already on desktop
+    Dim FileCheckGOT As String
+    
+    Application.DisplayAlerts = False
+    Application.ScreenUpdating = False
+    
+    'open file
+    FileName = Application.GetOpenFilename
+    If Right(FileName, 3) <> "txt" Then
+        MsgBox "Please choose Txt file"
+        Exit Sub
+    Else
+        Workbooks.OpenText FileName:=FileName, Origin _
+            :=xlMSDOS, StartRow:=1, DataType:=xlDelimited, TextQualifier:= _
+            xlDoubleQuote, ConsecutiveDelimiter:=True, Tab:=True, Semicolon:=False, _
+            Comma:=False, Space:=True, Other:=False, FieldInfo:=Array(Array(1, 1), _
+            Array(2, 1), Array(3, 1), Array(4, 1), Array(5, 1), Array(6, 1), Array(7, 1), Array(8, 1), _
+            Array(9, 1), Array(10, 1), Array(11, 1), Array(12, 1), Array(13, 1), Array(14, 1), Array(15 _
+            , 1), Array(16, 1)), TrailingMinusNumbers:=True
+    End If
+    
+    'paste file
+    Cells.Select
+    Application.CutCopyMode = False
+    Selection.Copy
+    ActiveWindow.Close
+    Windows("SAS_XML_Generator.xlsm").Activate
+    Sheets.Add After:=Sheets(2)
+    ActiveSheet.Paste
+    'fix city jet strings
+    Cells.Replace What:="(", Replacement:=""
+    
+    LastRow = Sheets(2).Cells(Rows.Count, 1).End(xlUp).Row 'lastrow in XML tab
+    LastString = Sheets(3).Cells(Rows.Count, 1).End(xlUp).Row ' lastrow in city jet order
+    'loop for city jet sheet
+    For I = 1 To LastString
+        If Left(Range("B" & I), 2) = "SK" Then
+            F = I + 1
+            Do Until Left(Sheets(3).Range("B" & F), 2) = "SK"
+                If F > LastString Then
+                    Exit Do
+                End If
+                If Range("E" & F).Value = 1 Then
+                    'fixed crew meals value
+                    Sheets(2).Range("A" & LastRow) = Right(Sheets(3).Range("C" & I + 2), 4) & "-" & Right(Left(Sheets(3).Range("C" & I + 2), 5), 2) & "-" & Left(Sheets(3).Range("C" & I + 2), 2)
+                    Sheets(2).Range("B" & LastRow) = Left(Sheets(3).Range("B" & I), 2) & " " & Right(Sheets(3).Range("B" & I), Len(Sheets(3).Range("B" & I)) - 3) 'fltID
+                    Sheets(2).Range("E" & LastRow) = 1 'mealNo
+                    Sheets(2).Range("G" & LastRow) = Sheets(2).Range("B" & LastRow) 'fltID
+                    Sheets(2).Range("H" & LastRow) = Left(Sheets(3).Range("C" & I), 3) 'From
+                    Sheets(2).Range("I" & LastRow) = Right(Sheets(3).Range("C" & I), 3) 'To
+                    'dinamic value
+                    'mealCode
+                    If Range("G" & F).Value = "" Then
+                        Sheets(2).Range("C" & LastRow) = Sheets(3).Range("F" & F).Value
+                    Else
+                        Sheets(2).Range("C" & LastRow) = Sheets(3).Range("F" & F).Value & " - " & Left(Sheets(3).Range("G" & F), 4)
+                    End If
+                    'mealDesc
+                    If Range("F" & F).Value = "B" Then
+                        Sheets(2).Range("D" & LastRow) = "Hot Breakfast"
+                    Else
+                        Sheets(2).Range("D" & LastRow) = "Hot Meal"
+                    End If
+                    'CC or CY
+                    CC = CC + 1
+                    If CC < 3 Then
+                        Sheets(2).Range("F" & LastRow) = "FD"
+                    Else
+                        Sheets(2).Range("F" & LastRow) = "CC"
+                    End If
+                    LastRow = LastRow + 1
+                End If
+            F = F + 1
+            Loop
+        End If
+    CC = 0
+    Next
+    Sheets(3).Delete
+    
+    'export xml - Check if XML's already on the desktop
+    FileCheckARN = ThisWorkbook.Path & "\SK3056CR.xml"
+    FileCheckGOT = ThisWorkbook.Path & "\SK3057CR.xml"
+    
+    If Sheets(2).Range("H2").Value = "GOT" Then
+        If Not Dir(FileCheckGOT, vbDirectory) = vbNullString Then
+            MsgBox "XML Already Exist. Please delete the file"
+            Sheets(1).Select
+            Exit Sub
+        End If
+        ActiveWorkbook.XmlMaps("SASCrewMealOrder_Map").Export Url:=ThisWorkbook.Path & "\SK3057CR.xml"
+    Else
+        If Not Dir(FileCheckARN, vbDirectory) = vbNullString Then
+            MsgBox "XML Already Exist. Please delete the file"
+            Sheets(1).Select
+            Exit Sub
+        End If
+        ActiveWorkbook.XmlMaps("SASCrewMealOrder_Map").Export Url:=ThisWorkbook.Path & "\SK3056CR.xml"
+    End If
+    
+    Sheets(1).Select
+    Application.ScreenUpdating = True
+    Application.DisplayAlerts = True
+End Sub

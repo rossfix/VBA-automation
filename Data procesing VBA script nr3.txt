@@ -1,0 +1,81 @@
+Sub Gather_LH()
+Dim FileName As String
+Dim a As Integer
+Dim i As Integer
+Dim b As Integer
+
+
+Application.ScreenUpdating = False
+Application.DisplayAlerts = False
+
+'open file
+FileName = Application.GetOpenFilename
+If Right(FileName, 3) <> "TXT" Then
+    MsgBox "Please choose Txt file"
+    Exit Sub
+Else
+    Workbooks.OpenText FileName:=FileName, Origin _
+        :=xlMSDOS, StartRow:=1, DataType:=xlFixedWidth, FieldInfo:=Array(Array(0 _
+        , 1), Array(7, 1), Array(17, 1), Array(22, 1), Array(28, 1), Array(33, 1), Array(40, 1), _
+        Array(45, 1), Array(49, 1), Array(54, 1), Array(59, 1), Array(65, 1), Array(70, 1), Array( _
+        74, 1), Array(80, 1), Array(84, 1), Array(94, 1), Array(98, 1), Array(103, 1), Array(126, 1) _
+        , Array(133, 1)), TrailingMinusNumbers:=True
+    Range("A1").Select
+    Selection.CurrentRegion.Select
+    Selection.Copy
+    ActiveWindow.Close
+    Worksheets("Body.txt").Activate
+    Worksheets("Body.txt").Range("A2").Select
+    ActiveSheet.Paste
+End If
+        
+UserForm1.Show
+
+a = Worksheets("Body.txt").Cells(Rows.Count, 1).End(xlUp).Row
+
+For i = 2 To a
+
+If Worksheets("Body.txt").Cells(i, 4).Value = "ARN" Then
+
+    Worksheets("Body.txt").Rows(i).Copy
+    Worksheets("DY_LH").Activate
+    b = Worksheets("DY_LH").Cells(Rows.Count, 1).End(xlUp).Row
+    Worksheets("DY_LH").Cells(b + 1, 1).Select
+    ActiveSheet.Paste
+    Worksheets("Body.txt").Activate
+    
+End If
+Next
+Application.CutCopyMode = False
+ThisWorkbook.Worksheets("Body.txt").Cells(1, 1).Select
+
+Worksheets("Control_Panel").Activate
+
+Unload UserForm1
+Application.DisplayAlerts = True
+Application.ScreenUpdating = True
+End Sub
+
+
+Sub clear()
+
+Sheets("Body.txt").Range("A2:W2000").ClearContents
+Sheets("DY_LH").Range("A2:W200").ClearContents
+Worksheets("Control_Panel").Activate
+
+End Sub
+
+Sub Flight1()
+Worksheets("Flight1").Activate
+End Sub
+
+Sub Flight2()
+Worksheets("Flight2").Activate
+End Sub
+Sub Flight3()
+Worksheets("Flight3").Activate
+End Sub
+
+Sub goto_contrpanel()
+Worksheets("Control_Panel").Activate
+End Sub
